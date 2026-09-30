@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FilmCard } from "@/components/FilmCard";
 import { mockFilms, trendingFilms } from "@/lib/mock-films";
 
@@ -36,9 +37,12 @@ export function FilmGrid() {
                 aria-hidden
               />
               <div className="min-w-0">
-                <p className="truncate font-serif text-cut-charcoal">
+                <Link
+                  href={`/film/${film.id}`}
+                  className="truncate font-serif text-cut-charcoal hover:underline"
+                >
                   {film.title}
-                </p>
+                </Link>
                 <p className="text-xs text-cut-muted">
                   {film.fundedPercent}% funded
                 </p>

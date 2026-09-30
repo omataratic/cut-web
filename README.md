@@ -57,9 +57,18 @@ Local demo with browser-injected wallets works without this (a placeholder ID is
 - Cut branding placeholders (`Cut`, `$CUT`, cream/charcoal)
 - Top nav: logo, Hot / New, search (disabled), Upload, Connect Wallet
 - Home: hero + static film card grid + trending rail
+- Film detail pages (`/film/[id]`) with funding summary
+- **Progress / BTS** feed on each film (localStorage MVP; filmmaker-only compose)
 - `/upload` placeholder
 - `/legal` experimental / not-financial-advice disclaimer
 - No backend, no contracts, no secrets required to run locally
+
+## Progress / BTS (MVP)
+
+- Open a film (e.g. [A Place Between](/film/1)) — sample BTS posts are seeded.
+- Everyone can read the chronological feed.
+- Connect a wallet, then **Claim filmmaker (local demo)** (or match the mock owner wallet) to post notes, image URLs / file previews, or YouTube Shorts links; delete your own posts.
+- Data lives in `localStorage` (`cut:bts:*`) via `src/lib/bts.ts` — swap for an API later without changing the UI.
 
 ## Key paths
 
@@ -67,10 +76,13 @@ Local demo with browser-injected wallets works without this (a placeholder ID is
 |------|------|
 | `src/lib/chain.ts` | Robinhood Chain (`4663`) definition |
 | `src/lib/wagmi.ts` | ConnectKit / wagmi config |
-| `src/lib/mock-films.ts` | Static film card data |
+| `src/lib/mock-films.ts` | Static film card data + owners |
+| `src/lib/bts.ts` | BTS types, seed data, localStorage helpers |
+| `src/components/BtsFeed.tsx` | Progress / BTS feed + composer |
 | `src/components/Nav.tsx` | Top navigation + ConnectKitButton |
 | `src/components/Providers.tsx` | Wagmi / React Query / ConnectKit |
 | `src/app/page.tsx` | Home |
+| `src/app/film/[id]/page.tsx` | Film detail + BTS |
 | `src/app/legal/page.tsx` | Disclaimer |
 
 ## Disclaimer
