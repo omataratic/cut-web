@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --cut-cream: #0a0a0a;
+  --cut-mist: #1a1a1a;
+  --cut-border: #2e2e2e;
+  --cut-charcoal: #f2f2f2;
+  --cut-muted: #9a9a9a;
+  --background: var(--cut-cream);
+  --foreground: var(--cut-charcoal);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-cut-cream: var(--cut-cream);
+  --color-cut-mist: var(--cut-mist);
+  --color-cut-border: var(--cut-border);
+  --color-cut-charcoal: var(--cut-charcoal);
+  --color-cut-muted: var(--cut-muted);
+  --font-sans: var(--font-cut-sans);
+  --font-serif: var(--font-cut-serif);
+  --font-mono: var(--font-cut-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
