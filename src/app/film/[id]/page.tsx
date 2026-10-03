@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BtsFeed } from "@/components/BtsFeed";
+import { FilmPreview } from "@/components/FilmPreview";
 import { getFilmById, mockFilms } from "@/lib/mock-films";
 
 type PageProps = {
@@ -44,23 +45,7 @@ export default async function FilmDetailPage({ params }: PageProps) {
       </p>
 
       <article className="mb-8">
-        <div
-          className="mb-5 flex aspect-[16/9] items-center justify-center rounded border border-cut-border bg-black text-cut-muted"
-          aria-hidden
-        >
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.25"
-          >
-            <rect x="3" y="5" width="18" height="14" rx="1" />
-            <circle cx="9" cy="11" r="2" />
-            <path d="M3 16l5-4 3 2 4-5 6 7" />
-          </svg>
-        </div>
+        <FilmPreview title={film.title} youtubeId={film.youtubeId} />
 
         <h1 className="font-serif text-3xl text-cut-charcoal sm:text-4xl">
           {film.title}
@@ -93,6 +78,18 @@ export default async function FilmDetailPage({ params }: PageProps) {
           <p className="text-xs text-cut-muted">
             {film.pledges} pledges · {film.upvotes} upvotes
           </p>
+          <div className="pt-2">
+            <Link
+              href={`/film/${film.id}/pledge`}
+              className="inline-flex rounded border border-cut-charcoal bg-cut-charcoal px-5 py-2.5 text-sm text-cut-cream hover:opacity-90"
+            >
+              Pledge $CUT
+            </Link>
+            <p className="mt-2 text-xs leading-relaxed text-cut-muted">
+              Pledges are held in $CUT. If the goal is missed, the pledge is
+              refunded in full.
+            </p>
+          </div>
         </div>
       </article>
 

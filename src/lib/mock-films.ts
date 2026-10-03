@@ -10,6 +10,11 @@ export type Film = {
   /** Filmmaker / campaign owner wallet (mock). Local claim can override in BTS. */
   ownerWallet: string;
   synopsis: string;
+  /**
+   * YouTube video id when the film has a real preview.
+   * Leave unset for fictional demos — do not borrow unrelated trailers.
+   */
+  youtubeId?: string;
 };
 
 /** Demo filmmaker for "A Place Between" — claim locally to post from any wallet. */
