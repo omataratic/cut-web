@@ -13,6 +13,10 @@ export function Hero() {
           funding for their projects. Users can invest in projects they believe
           in and receive a portion of that film&apos;s revenue upon release.
         </p>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-cut-muted sm:text-base">
+          Finished films will stream for $3.99 a month once there is something
+          to watch.
+        </p>
         <p className="mt-5">
           <a
             href="/CUT-whitepaper.pdf"
