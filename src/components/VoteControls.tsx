@@ -19,10 +19,45 @@ type VoteControlsProps = {
   sync?: boolean;
 };
 
-function arrowClass(active: boolean, resting: string): string {
-  return `inline-flex h-5 w-5 items-center justify-center leading-none disabled:opacity-60 ${
-    active ? "rounded-sm bg-cut-border text-cut-charcoal" : resting
-  }`;
+function VoteButton({
+  direction,
+  active,
+  pending,
+  onClick,
+}: {
+  direction: VoteDirection;
+  active: boolean;
+  pending: boolean;
+  onClick: () => void;
+}) {
+  const word = direction === "up" ? "Up" : "Down";
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      aria-label={active ? `Remove ${word.toLowerCase()}vote` : `${word}vote`}
+      disabled={pending}
+      onClick={onClick}
+      className={`inline-flex h-11 min-w-20 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium disabled:opacity-60 ${
+        active
+          ? direction === "up"
+            ? "border-cut-charcoal bg-cut-charcoal text-black"
+            : "border-cut-muted bg-cut-border text-cut-charcoal"
+          : "border-cut-border bg-black text-cut-charcoal hover:border-cut-muted"
+      }`}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        aria-hidden
+        className={direction === "down" ? "rotate-180" : undefined}
+      >
+        <path d="M8 2.5 13.5 11H2.5L8 2.5Z" fill="currentColor" />
+      </svg>
+      {word}
+    </button>
+  );
 }
 
 export function VoteControls({
@@ -132,29 +167,23 @@ export function VoteControls({
 
   return (
     <div>
-      <div className="flex items-center gap-1 text-sm text-cut-charcoal">
-        <button
-          type="button"
-          aria-pressed={mine === "up"}
-          aria-label={mine === "up" ? "Remove upvote" : "Upvote"}
-          disabled={pending}
+      <div className="flex flex-wrap items-center gap-2 text-cut-charcoal">
+        <VoteButton
+          direction="up"
+          active={mine === "up"}
+          pending={pending}
           onClick={() => void cast("up")}
-          className={arrowClass(mine === "up", "text-cut-charcoal")}
-        >
-          ▲
-        </button>
-        <button
-          type="button"
-          aria-pressed={mine === "down"}
-          aria-label={mine === "down" ? "Remove downvote" : "Downvote"}
-          disabled={pending}
+        />
+        <span className="min-w-8 text-center text-lg font-medium tabular-nums">
+          {score}
+          <span className="sr-only"> score</span>
+        </span>
+        <VoteButton
+          direction="down"
+          active={mine === "down"}
+          pending={pending}
           onClick={() => void cast("down")}
-          className={arrowClass(mine === "down", "text-cut-muted")}
-        >
-          ▼
-        </button>
-        <span className="ml-1 tabular-nums">{score}</span>
-        <span className="sr-only">score</span>
+        />
       </div>
       {error ? (
         <p role="alert" className="mt-1 text-xs text-red-400">
