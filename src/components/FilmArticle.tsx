@@ -15,9 +15,58 @@ function formatUsd(n: number) {
 type FilmArticleProps = {
   film: Film;
   localOnly?: boolean;
+  prev?: Film | null;
+  next?: Film | null;
 };
 
-export function FilmArticle({ film, localOnly = false }: FilmArticleProps) {
+function FilmStep({
+  film,
+  direction,
+}: {
+  film: Film;
+  direction: "prev" | "next";
+}) {
+  const label = direction === "prev" ? "Previous" : "Next";
+  return (
+    <Link
+      href={`/film/${film.id}`}
+      aria-label={`${label}: ${film.title}`}
+      className={`inline-flex min-h-11 max-w-[48%] items-center gap-2 rounded-md border border-cut-border bg-black px-3 text-sm text-cut-charcoal hover:border-cut-muted ${
+        direction === "next" ? "ml-auto flex-row-reverse text-right" : ""
+      }`}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        aria-hidden
+        className={direction === "next" ? "rotate-180" : undefined}
+      >
+        <path
+          d="M10.5 2.5 4.5 8l6 5.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="min-w-0">
+        <span className="block text-xs tracking-widest text-cut-muted uppercase">
+          {label}
+        </span>
+        <span className="block truncate">{film.title}</span>
+      </span>
+    </Link>
+  );
+}
+
+export function FilmArticle({
+  film,
+  localOnly = false,
+  prev = null,
+  next = null,
+}: FilmArticleProps) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
       <p className="mb-4 text-sm">
@@ -30,6 +79,13 @@ export function FilmArticle({ film, localOnly = false }: FilmArticleProps) {
         <p className="mb-4 text-sm leading-relaxed text-cut-muted">
           Only this browser has this film. Other visitors cannot see it.
         </p>
+      ) : null}
+
+      {prev || next ? (
+        <div className="mb-3 flex items-stretch gap-3">
+          {prev ? <FilmStep film={prev} direction="prev" /> : <span />}
+          {next ? <FilmStep film={next} direction="next" /> : <span />}
+        </div>
       ) : null}
 
       <article className="mb-8">

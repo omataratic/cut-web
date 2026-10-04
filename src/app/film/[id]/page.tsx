@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { FilmArticle } from "@/components/FilmArticle";
 import { LocalFilmPage } from "@/components/LocalFilmPage";
+import { loadCatalog } from "@/lib/catalog";
+import type { Film } from "@/lib/mock-films";
 import { resolveFilm } from "@/lib/resolve-film";
 
 type PageProps = {
@@ -19,9 +21,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+function neighbors(films: Film[], id: string): {
+  prev: Film | null;
+  next: Film | null;
+} {
+  const ordered = films.slice().sort((a, b) => b.upvotes - a.upvotes);
+  const index = ordered.findIndex((film) => film.id === id);
+  if (index < 0) return { prev: null, next: null };
+  return {
+    prev: ordered[index - 1] ?? null,
+    next: ordered[index + 1] ?? null,
+  };
+}
+
 export default async function FilmDetailPage({ params }: PageProps) {
   const { id } = await params;
   const film = await resolveFilm(id);
   if (!film) return <LocalFilmPage id={id} />;
-  return <FilmArticle film={film} />;
+  const { films } = await loadCatalog();
+  const { prev, next } = neighbors(films, film.id);
+  return <FilmArticle film={film} prev={prev} next={next} />;
 }
