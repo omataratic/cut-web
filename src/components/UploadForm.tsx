@@ -46,11 +46,19 @@ export function UploadForm() {
       });
       const data = (await response.json()) as {
         error?: string;
+        url?: string;
         submission?: { id: string };
       };
 
-      if (response.ok && data.submission?.id) {
-        router.push(`/film/${data.submission.id}`);
+      const filmUrl =
+        typeof data.url === "string" && data.url.startsWith("/film/")
+          ? data.url
+          : data.submission?.id
+            ? `/film/${data.submission.id}`
+            : null;
+
+      if (response.ok && filmUrl) {
+        router.push(filmUrl);
         return;
       }
 

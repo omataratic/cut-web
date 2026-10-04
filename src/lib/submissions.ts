@@ -41,6 +41,7 @@ export function submissionToFilm(submission: Submission): Film {
     ownerWallet: "0x0000000000000000000000000000000000000000",
     synopsis: submission.synopsis,
     youtubeId: submission.youtubeId,
+    createdAt: submission.createdAt,
   };
 }
 

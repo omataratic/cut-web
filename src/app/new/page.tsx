@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { HomeView } from "@/components/HomeView";
 
 export const dynamic = "force-dynamic";
 
-type HomePageProps = {
+export const metadata: Metadata = {
+  title: "New — Cut",
+  description: "Newest film previews on Cut, including submitted films.",
+};
+
+type NewPageProps = {
   searchParams: Promise<{ q?: string | string[] }>;
 };
 
@@ -11,7 +17,7 @@ function queryValue(value: string | string[] | undefined): string {
   return value ?? "";
 }
 
-export default async function HomePage({ searchParams }: HomePageProps) {
+export default async function NewPage({ searchParams }: NewPageProps) {
   const { q } = await searchParams;
-  return <HomeView sort="hot" query={queryValue(q)} />;
+  return <HomeView sort="new" query={queryValue(q)} />;
 }

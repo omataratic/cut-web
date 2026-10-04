@@ -13,9 +13,34 @@ import {
 type FilmGridProps = {
   films: Film[];
   trending: Film[];
+  sort?: "hot" | "new";
+  query?: string;
 };
 
-export function FilmGrid({ films, trending }: FilmGridProps) {
+function matchesQuery(film: Film, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return (
+    film.title.toLowerCase().includes(needle) ||
+    film.director.toLowerCase().includes(needle)
+  );
+}
+
+function byNewest(a: Film, b: Film): number {
+  const time = (film: Film) => {
+    if (!film.createdAt) return Number.NEGATIVE_INFINITY;
+    const parsed = Date.parse(film.createdAt);
+    return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+  };
+  return time(b) - time(a);
+}
+
+export function FilmGrid({
+  films,
+  trending,
+  sort = "hot",
+  query = "",
+}: FilmGridProps) {
   const localFilms = useSyncExternalStore(
     subscribeLocalFilms,
     getLocalFilmsSnapshot,
@@ -23,7 +48,11 @@ export function FilmGrid({ films, trending }: FilmGridProps) {
   );
   const known = new Set(films.map((film) => film.id));
   const extras = localFilms.filter((film) => !known.has(film.id));
-  const listed = [...extras, ...films];
+  const ordered =
+    sort === "new" ? [...extras, ...films].sort(byNewest) : [...extras, ...films];
+  const listed = ordered.filter((film) => matchesQuery(film, query));
+  const visibleTrending = trending.filter((film) => matchesQuery(film, query));
+  const heading = sort === "new" ? "New" : "Front page";
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_220px]">
@@ -32,13 +61,17 @@ export function FilmGrid({ films, trending }: FilmGridProps) {
           id="front-page-heading"
           className="mb-4 font-serif text-2xl text-cut-charcoal"
         >
-          Front page
+          {heading}
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {listed.map((film) => (
-            <FilmCard key={film.id} film={film} />
-          ))}
-        </div>
+        {listed.length === 0 ? (
+          <p className="text-sm text-cut-muted">No films match that search.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {listed.map((film) => (
+              <FilmCard key={film.id} film={film} />
+            ))}
+          </div>
+        )}
       </section>
 
       <aside className="hidden lg:block" aria-labelledby="trending-heading">
@@ -49,7 +82,7 @@ export function FilmGrid({ films, trending }: FilmGridProps) {
           Trending
         </h2>
         <ol className="space-y-3">
-          {trending.map((film, index) => (
+          {visibleTrending.map((film, index) => (
             <li key={film.id} className="flex items-start gap-2 text-sm">
               <span className="w-4 shrink-0 tabular-nums text-cut-muted">
                 {index + 1}

@@ -17,6 +17,8 @@ export type Film = {
   youtubeId?: string;
   /** Fictional demo, shown so visitors can tell it from a submitted film. */
   sample?: boolean;
+  /** ISO time for a real submission. Samples omit this and sort after them. */
+  createdAt?: string;
 };
 
 /** Demo filmmaker for "A Place Between" — claim locally to post from any wallet. */

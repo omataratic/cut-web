@@ -29,5 +29,9 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
-  return NextResponse.json({ submission: result.submission }, { status: 201 });
+  const url = `/film/${result.submission.id}`;
+  return NextResponse.json(
+    { submission: result.submission, url },
+    { status: 201 },
+  );
 }

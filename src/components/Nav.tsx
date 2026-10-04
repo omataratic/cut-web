@@ -1,10 +1,56 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ConnectKitButton } from "connectkit";
+import { Suspense, useEffect, useRef, useState } from "react";
+
+function withQuery(path: string, query: string): string {
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
 
 export function Nav() {
+  return (
+    <Suspense fallback={<NavBar query="" onSearch={() => {}} />}>
+      <NavBarLive />
+    </Suspense>
+  );
+}
+
+function NavBarLive() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(urlQuery);
+  const pendingQuery = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (pendingQuery.current !== null && pendingQuery.current !== urlQuery) return;
+    pendingQuery.current = null;
+    setQuery(urlQuery);
+  }, [urlQuery]);
+
+  const onSearch = (value: string) => {
+    pendingQuery.current = value;
+    setQuery(value);
+    const path = pathname === "/new" ? "/new" : "/";
+    router.replace(withQuery(path, value), { scroll: false });
+  };
+
+  return <NavBar query={query} onSearch={onSearch} />;
+}
+
+function NavBar({
+  query,
+  onSearch,
+}: {
+  query: string;
+  onSearch: (value: string) => void;
+}) {
   const pathname = usePathname();
   const isHot = pathname === "/" || pathname === "/hot";
   const isNew = pathname === "/new";
@@ -32,7 +78,7 @@ export function Nav() {
 
         <nav className="flex items-center gap-4 text-sm">
           <Link
-            href="/"
+            href={withQuery("/", query)}
             className={
               isHot
                 ? "border-b border-cut-charcoal pb-0.5 text-cut-charcoal"
@@ -42,7 +88,7 @@ export function Nav() {
             Hot
           </Link>
           <Link
-            href="/#new"
+            href={withQuery("/new", query)}
             className={
               isNew
                 ? "border-b border-cut-charcoal pb-0.5 text-cut-charcoal"
@@ -72,10 +118,10 @@ export function Nav() {
             </span>
             <input
               type="search"
+              value={query}
+              onChange={(event) => onSearch(event.target.value)}
               placeholder="Search films, creators, keywords..."
               className="w-full rounded border border-cut-border bg-cut-mist py-2 pl-9 pr-3 text-sm text-cut-charcoal placeholder:text-cut-muted focus:border-cut-charcoal focus:outline-none"
-              disabled
-              title="Search coming later"
             />
           </label>
         </div>
