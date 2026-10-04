@@ -17,7 +17,9 @@ type FilmCardProps = {
 };
 
 export function FilmCard({ film, onScore }: FilmCardProps) {
-  const thumbnail = youtubeThumbnailUrl(film.youtubeId);
+  const thumbnail =
+    youtubeThumbnailUrl(film.youtubeId) ??
+    (film.sample ? `/samples/${film.id}.jpg` : null);
 
   return (
     <article className="flex flex-col overflow-hidden rounded border border-cut-border bg-cut-mist transition-colors hover:border-cut-charcoal/40">

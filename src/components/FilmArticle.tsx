@@ -33,7 +33,11 @@ export function FilmArticle({ film, localOnly = false }: FilmArticleProps) {
       ) : null}
 
       <article className="mb-8">
-        <FilmPreview title={film.title} youtubeId={film.youtubeId} />
+        <FilmPreview
+          title={film.title}
+          youtubeId={film.youtubeId}
+          still={film.sample ? `/samples/${film.id}.jpg` : null}
+        />
 
         {film.sample ? (
           <p className="mb-2 text-xs tracking-widest text-cut-muted uppercase">

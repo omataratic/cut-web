@@ -6,9 +6,10 @@ const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 type FilmPreviewProps = {
   title: string;
   youtubeId?: Film["youtubeId"];
+  still?: string | null;
 };
 
-export function FilmPreview({ title, youtubeId }: FilmPreviewProps) {
+export function FilmPreview({ title, youtubeId, still }: FilmPreviewProps) {
   const id = youtubeId && YOUTUBE_ID.test(youtubeId) ? youtubeId : null;
 
   if (id) {
@@ -22,6 +23,16 @@ export function FilmPreview({ title, youtubeId }: FilmPreviewProps) {
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
         />
+      </div>
+    );
+  }
+
+  if (still) {
+    return (
+      <div className="mb-5 aspect-[16/9] overflow-hidden rounded border border-cut-border bg-black">
+        {/* Sample still, not a playable preview. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={still} alt="" className="h-full w-full object-cover" />
       </div>
     );
   }
