@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Film } from "@/lib/mock-films";
+import { youtubeThumbnailUrl } from "@/lib/youtube";
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -14,6 +15,8 @@ type FilmCardProps = {
 };
 
 export function FilmCard({ film }: FilmCardProps) {
+  const thumbnail = youtubeThumbnailUrl(film.youtubeId);
+
   return (
     <article className="flex flex-col overflow-hidden rounded border border-cut-border bg-cut-mist transition-colors hover:border-cut-charcoal/40">
       <Link href={`/film/${film.id}`} className="flex flex-1 flex-col">
@@ -21,18 +24,28 @@ export function FilmCard({ film }: FilmCardProps) {
           className="flex aspect-[16/10] items-center justify-center bg-black text-cut-muted"
           aria-hidden
         >
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.25"
-          >
-            <rect x="3" y="5" width="18" height="14" rx="1" />
-            <circle cx="9" cy="11" r="2" />
-            <path d="M3 16l5-4 3 2 4-5 6 7" />
-          </svg>
+          {thumbnail ? (
+            // Public YouTube still, not a local asset. next/image would proxy it.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={thumbnail}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+            >
+              <rect x="3" y="5" width="18" height="14" rx="1" />
+              <circle cx="9" cy="11" r="2" />
+              <path d="M3 16l5-4 3 2 4-5 6 7" />
+            </svg>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-3">

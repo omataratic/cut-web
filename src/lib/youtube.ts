@@ -44,3 +44,12 @@ export function youtubeIdFromLink(input: string): string | null {
   if (!id || !YOUTUBE_ID.test(id)) return null;
   return id;
 }
+
+/** Public YouTube still. Only for a real 11-character video id. */
+export function youtubeThumbnailUrl(
+  youtubeId: string | null | undefined,
+): string | null {
+  if (!youtubeId || !YOUTUBE_ID.test(youtubeId)) return null;
+  return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+}
+
