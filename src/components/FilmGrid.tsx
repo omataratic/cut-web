@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { FilmCard } from "@/components/FilmCard";
 import type { Film } from "@/lib/mock-films";
 import {
@@ -13,6 +13,7 @@ import {
 type FilmGridProps = {
   films: Film[];
   trending: Film[];
+  scores?: Record<string, number>;
   sort?: "hot" | "new";
   query?: string;
 };
@@ -35,9 +36,14 @@ function byNewest(a: Film, b: Film): number {
   return time(b) - time(a);
 }
 
+function byScore(a: Film, b: Film): number {
+  return b.upvotes - a.upvotes;
+}
+
 export function FilmGrid({
   films,
   trending,
+  scores = {},
   sort = "hot",
   query = "",
 }: FilmGridProps) {
@@ -46,10 +52,21 @@ export function FilmGrid({
     getLocalFilmsSnapshot,
     getLocalFilmsServerSnapshot,
   );
+  const [scoreOverrides, setScoreOverrides] = useState<Record<string, number>>(
+    {},
+  );
   const known = new Set(films.map((film) => film.id));
   const extras = localFilms.filter((film) => !known.has(film.id));
-  const ordered =
-    sort === "new" ? [...extras, ...films].sort(byNewest) : [...extras, ...films];
+  const pool = [...extras, ...films].map((film) => {
+    const upvotes =
+      film.id in scoreOverrides
+        ? scoreOverrides[film.id]
+        : film.id in scores
+          ? scores[film.id]
+          : film.upvotes;
+    return upvotes === film.upvotes ? film : { ...film, upvotes };
+  });
+  const ordered = sort === "new" ? [...pool].sort(byNewest) : [...pool].sort(byScore);
   const listed = ordered.filter((film) => matchesQuery(film, query));
   const visibleTrending = trending.filter((film) => matchesQuery(film, query));
   const heading = sort === "new" ? "New" : "Front page";
@@ -68,7 +85,17 @@ export function FilmGrid({
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {listed.map((film) => (
-              <FilmCard key={film.id} film={film} />
+              <FilmCard
+                key={film.id}
+                film={film}
+                onScore={(score) =>
+                  setScoreOverrides((current) =>
+                    current[film.id] === score
+                      ? current
+                      : { ...current, [film.id]: score },
+                  )
+                }
+              />
             ))}
           </div>
         )}

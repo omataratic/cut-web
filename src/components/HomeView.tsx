@@ -9,13 +9,13 @@ export async function HomeView({
   sort: "hot" | "new";
   query: string;
 }) {
-  const { films, trending } = await loadCatalog();
+  const { films, trending, scores } = await loadCatalog();
 
   return (
     <>
       <Hero />
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <FilmGrid films={films} trending={trending} sort={sort} query={query} />
+        <FilmGrid films={films} trending={trending} scores={scores} sort={sort} query={query} />
       </div>
     </>
   );

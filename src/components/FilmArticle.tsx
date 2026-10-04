@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BtsFeed } from "@/components/BtsFeed";
 import { FilmPreview } from "@/components/FilmPreview";
+import { VoteControls } from "@/components/VoteControls";
 import type { Film } from "@/lib/mock-films";
 
 function formatUsd(n: number) {
@@ -70,9 +71,8 @@ export function FilmArticle({ film, localOnly = false }: FilmArticleProps) {
               {formatUsd(film.raisedUsd)} / {formatUsd(film.goalUsd)}
             </span>
           </div>
-          <p className="text-xs text-cut-muted">
-            {film.pledges} pledges · {film.upvotes} upvotes
-          </p>
+          <VoteControls filmId={film.id} score={film.upvotes} sync />
+          <p className="text-xs text-cut-muted">{film.pledges} pledges</p>
           <div className="pt-2">
             <Link
               href={`/film/${film.id}/pledge`}
