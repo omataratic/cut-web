@@ -1,10 +1,25 @@
+import { isCreatorId } from "@/lib/creator";
+
 export type FinishedFilm = {
   id: string;
   title: string;
   creator: string;
   synopsis: string;
   createdAt: string;
+  /** Browser creator id. Absent on older public rows. */
+  creatorId?: string;
 };
+
+export const FINISHED_ID = /^f-[0-9a-f-]{36}$/i;
+
+const FINISHED_KEYS = new Set([
+  "id",
+  "title",
+  "creator",
+  "synopsis",
+  "createdAt",
+  "creatorId",
+]);
 
 export type FinishedFilmInput = {
   title: string;
@@ -54,12 +69,11 @@ export function isFinishedFilm(value: unknown): value is FinishedFilm {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
   const keys = Object.keys(row);
-  if (keys.some((key) => !["id", "title", "creator", "synopsis", "createdAt"].includes(key))) {
-    return false;
-  }
+  if (keys.some((key) => !FINISHED_KEYS.has(key))) return false;
+  if ("creatorId" in row && !isCreatorId(row.creatorId)) return false;
   return (
     typeof row.id === "string" &&
-    /^f-[0-9a-f-]{36}$/i.test(row.id) &&
+    FINISHED_ID.test(row.id) &&
     typeof row.title === "string" &&
     row.title.length > 0 &&
     row.title.length <= FINISHED_TITLE_MAX &&
@@ -78,4 +92,27 @@ export function isFinishedFilm(value: unknown): value is FinishedFilm {
 export function parseFinishedList(value: unknown): FinishedFilm[] {
   if (!Array.isArray(value)) return [];
   return value.filter(isFinishedFilm);
+}
+
+export function publicFinishedFilm(
+  film: FinishedFilm,
+): Omit<FinishedFilm, "creatorId"> {
+  return {
+    id: film.id,
+    title: film.title,
+    creator: film.creator,
+    synopsis: film.synopsis,
+    createdAt: film.createdAt,
+  };
+}
+
+export function finishedRecord(film: FinishedFilm): FinishedFilm {
+  return {
+    id: film.id,
+    title: film.title,
+    creator: film.creator,
+    synopsis: film.synopsis,
+    createdAt: film.createdAt,
+    ...(film.creatorId ? { creatorId: film.creatorId } : {}),
+  };
 }

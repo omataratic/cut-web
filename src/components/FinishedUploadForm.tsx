@@ -2,6 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { getOrCreateCreatorId } from "@/lib/creator";
 import {
   FINISHED_CREATOR_MAX,
   FINISHED_SYNOPSIS_MAX,
@@ -38,6 +39,14 @@ export function FinishedUploadForm() {
       return;
     }
 
+    let creatorId: string;
+    try {
+      creatorId = getOrCreateCreatorId();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "This browser cannot store a creator id.");
+      return;
+    }
+
     setPending(true);
     try {
       const response = await fetch("/api/finished", {
@@ -47,6 +56,7 @@ export function FinishedUploadForm() {
           title: fields.title,
           creator: fields.creator,
           synopsis: fields.synopsis,
+          creatorId,
         }),
       });
       const data = (await response.json()) as {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { creatorIdFromJson } from "@/lib/creator";
+import { publicFinishedFilm, type FinishedFilmInput } from "@/lib/finished";
 import { createSharedFinished, readSharedFinished } from "@/lib/github-finished";
-import type { FinishedFilmInput } from "@/lib/finished";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ const FILE_REJECTED =
 
 export async function GET() {
   const films = await readSharedFinished();
-  return NextResponse.json({ films });
+  return NextResponse.json({ films: films.map(publicFinishedFilm) });
 }
 
 function stringField(value: unknown): string {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
   }
 
   let body: FinishedFilmInput;
+  let creatorId = "";
   try {
     const reader = request.body?.getReader();
     if (!reader) {
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
       chunks.length === 1 ? chunks[0] : Buffer.concat(chunks),
     );
     const json = JSON.parse(text) as Partial<FinishedFilmInput>;
+    creatorId = creatorIdFromJson(json);
     body = {
       title: stringField(json.title),
       creator: stringField(json.creator),
@@ -71,12 +74,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter the film details." }, { status: 400 });
   }
 
-  const result = await createSharedFinished(body);
+  const result = await createSharedFinished(body, creatorId);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   return NextResponse.json(
-    { film: result.film, url: `/finished/${result.film.id}` },
+    { film: publicFinishedFilm(result.film), url: `/finished/${result.film.id}` },
     { status: 201 },
   );
 }

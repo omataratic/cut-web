@@ -1,4 +1,10 @@
 import type { Film } from "@/lib/mock-films";
+import {
+  CREATOR_KEY_INVALID,
+  CREATOR_MISMATCH,
+  CREATOR_UNOWNED,
+  isCreatorId,
+} from "@/lib/creator";
 import { youtubeIdFromLink } from "@/lib/youtube";
 
 export type Submission = {
@@ -9,7 +15,11 @@ export type Submission = {
   youtubeId: string;
   goalUsd: number;
   createdAt: string;
+  /** Browser creator id. Absent on older public rows. */
+  creatorId?: string;
 };
+
+export const SUBMISSION_ID = /^c-[0-9a-f-]{36}$/i;
 
 export type SubmissionInput = {
   title: string;
@@ -95,9 +105,10 @@ export function validateSubmissionInput(
 export function isSubmission(value: unknown): value is Submission {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
+  if ("creatorId" in row && !isCreatorId(row.creatorId)) return false;
   return (
     typeof row.id === "string" &&
-    /^c-[0-9a-f-]{36}$/i.test(row.id) &&
+    SUBMISSION_ID.test(row.id) &&
     typeof row.title === "string" &&
     row.title.length > 0 &&
     row.title.length <= TITLE_MAX &&
@@ -163,13 +174,21 @@ export function getLocalFilmByIdSnapshot(id: string): Film | null {
 }
 
 export function saveLocalSubmission(
-  value: Omit<Submission, "id" | "createdAt">,
+  value: Omit<Submission, "id" | "createdAt" | "creatorId"> & { creatorId: string },
 ): Submission {
   if (!canUseStorage()) {
     throw new Error("This browser cannot store a film preview.");
   }
+  if (!isCreatorId(value.creatorId)) {
+    throw new Error(CREATOR_KEY_INVALID);
+  }
   const submission: Submission = {
-    ...value,
+    title: value.title,
+    creator: value.creator,
+    synopsis: value.synopsis,
+    youtubeId: value.youtubeId,
+    goalUsd: value.goalUsd,
+    creatorId: value.creatorId,
     id: `c-${crypto.randomUUID()}`,
     createdAt: new Date().toISOString(),
   };
@@ -177,6 +196,73 @@ export function saveLocalSubmission(
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   window.dispatchEvent(new Event("cut-films"));
   return submission;
+}
+
+
+export function publicSubmission(
+  submission: Submission,
+): Omit<Submission, "creatorId"> {
+  return {
+    id: submission.id,
+    title: submission.title,
+    creator: submission.creator,
+    synopsis: submission.synopsis,
+    youtubeId: submission.youtubeId,
+    goalUsd: submission.goalUsd,
+    createdAt: submission.createdAt,
+  };
+}
+
+export function updateLocalSubmission(
+  id: string,
+  creatorId: string,
+  value: Omit<Submission, "id" | "createdAt" | "creatorId">,
+): { ok: true; submission: Submission } | { ok: false; error: string } {
+  if (!canUseStorage()) {
+    return { ok: false, error: "This browser cannot store a film preview." };
+  }
+  if (!isCreatorId(creatorId)) return { ok: false, error: CREATOR_KEY_INVALID };
+  const rows = readLocalSubmissions();
+  const index = rows.findIndex((row) => row.id === id);
+  if (index < 0) return { ok: false, error: "That preview is not in this browser." };
+  const row = rows[index];
+  if (!row.creatorId) return { ok: false, error: CREATOR_UNOWNED };
+  if (row.creatorId !== creatorId) return { ok: false, error: CREATOR_MISMATCH };
+  const updated: Submission = {
+    id: row.id,
+    title: value.title,
+    creator: value.creator,
+    synopsis: value.synopsis,
+    youtubeId: value.youtubeId,
+    goalUsd: value.goalUsd,
+    createdAt: row.createdAt,
+    creatorId: row.creatorId,
+  };
+  const next = rows.slice();
+  next[index] = updated;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event("cut-films"));
+  return { ok: true, submission: updated };
+}
+
+export function deleteLocalSubmission(
+  id: string,
+  creatorId: string,
+): { ok: true } | { ok: false; error: string } {
+  if (!canUseStorage()) {
+    return { ok: false, error: "This browser cannot store a film preview." };
+  }
+  if (!isCreatorId(creatorId)) return { ok: false, error: CREATOR_KEY_INVALID };
+  const rows = readLocalSubmissions();
+  const index = rows.findIndex((row) => row.id === id);
+  if (index < 0) return { ok: true };
+  const row = rows[index];
+  if (!row.creatorId) return { ok: false, error: CREATOR_UNOWNED };
+  if (row.creatorId !== creatorId) return { ok: false, error: CREATOR_MISMATCH };
+  const next = rows.filter((item) => item.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event("cut-films"));
+  return { ok: true };
 }
 
 const localListeners = new Set<() => void>();

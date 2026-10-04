@@ -2,7 +2,15 @@ import { cache } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  CREATOR_KEY_INVALID,
+  CREATOR_MISMATCH,
+  CREATOR_UNOWNED,
+  isCreatorId,
+} from "@/lib/creator";
+import { removeSharedVotesForFilm } from "@/lib/github-votes";
+import {
   parseSubmissionList,
+  SUBMISSION_ID,
   type Submission,
   type SubmissionInput,
   validateSubmissionInput,
@@ -84,6 +92,7 @@ export const readSharedSubmissions = cache(async (): Promise<Submission[]> => {
 
 export async function createSharedSubmission(
   input: SubmissionInput,
+  creatorId: string,
 ): Promise<
   | { ok: true; submission: Submission }
   | { ok: false; status: number; error: string }
@@ -95,6 +104,9 @@ export async function createSharedSubmission(
       status: 503,
       error: "Shared save is not configured on this server.",
     };
+  }
+  if (!isCreatorId(creatorId)) {
+    return { ok: false, status: 400, error: CREATOR_KEY_INVALID };
   }
 
   const validated = validateSubmissionInput(input);
@@ -116,7 +128,12 @@ export async function createSharedSubmission(
     }
 
     const submission: Submission = {
-      ...validated.value,
+      title: validated.value.title,
+      creator: validated.value.creator,
+      synopsis: validated.value.synopsis,
+      youtubeId: validated.value.youtubeId,
+      goalUsd: validated.value.goalUsd,
+      creatorId,
       id: `c-${crypto.randomUUID()}`,
       createdAt: new Date().toISOString(),
     };
@@ -159,4 +176,187 @@ export async function createSharedSubmission(
 
 export function sharedSaveConfigured(): boolean {
   return githubToken() !== null;
+}
+
+const EDIT_FAILED = "Could not save this edit. Nothing was changed.";
+const DELETE_FAILED = "Could not remove this preview. Nothing was changed.";
+
+function submissionRecord(row: Submission): Submission {
+  return {
+    id: row.id,
+    title: row.title,
+    creator: row.creator,
+    synopsis: row.synopsis,
+    youtubeId: row.youtubeId,
+    goalUsd: row.goalUsd,
+    createdAt: row.createdAt,
+    ...(row.creatorId ? { creatorId: row.creatorId } : {}),
+  };
+}
+
+function ownedRow(
+  rows: Submission[],
+  id: string,
+  creatorId: string,
+):
+  | { ok: true; index: number; row: Submission }
+  | { ok: false; status: number; error: string } {
+  if (!isCreatorId(creatorId) || !SUBMISSION_ID.test(id)) {
+    return { ok: false, status: 400, error: "That preview cannot be changed." };
+  }
+  const index = rows.findIndex((row) => row.id === id);
+  if (index < 0) {
+    return { ok: false, status: 404, error: "That preview is not on the list." };
+  }
+  const row = rows[index];
+  if (!row.creatorId) return { ok: false, status: 403, error: CREATOR_UNOWNED };
+  if (row.creatorId !== creatorId) {
+    return { ok: false, status: 403, error: CREATOR_MISMATCH };
+  }
+  return { ok: true, index, row };
+}
+
+async function writeSubmissions(
+  token: string,
+  rows: Submission[],
+  sha: string | null,
+  message: string,
+): Promise<boolean | "conflict"> {
+  const content = Buffer.from(
+    `${JSON.stringify(rows.map(submissionRecord), null, 2)}\n`,
+    "utf8",
+  ).toString("base64");
+  const response = await fetch(contentsUrl(), {
+    method: "PUT",
+    headers: {
+      ...githubHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message,
+      content,
+      branch: "main",
+      ...(sha ? { sha } : {}),
+    }),
+  });
+  if (response.status === 409) return "conflict";
+  return response.ok;
+}
+
+export async function updateSharedSubmission(
+  id: string,
+  creatorId: string,
+  input: SubmissionInput,
+): Promise<
+  | { ok: true; submission: Submission }
+  | { ok: false; status: number; error: string }
+> {
+  const token = githubToken();
+  if (!token) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Shared save is not configured on this server.",
+    };
+  }
+  const validated = validateSubmissionInput(input);
+  if (!validated.ok) return { ok: false, status: 400, error: validated.error };
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const current = await readGithubFile(token);
+    if (current.status === "error") {
+      return {
+        ok: false,
+        status: 503,
+        error: "Could not read the film list. Nothing was changed.",
+      };
+    }
+    const existing = current.status === "ok" ? current.submissions : [];
+    const owned = ownedRow(existing, id, creatorId);
+    if (!owned.ok) return owned;
+
+    const submission: Submission = {
+      id: owned.row.id,
+      title: validated.value.title,
+      creator: validated.value.creator,
+      synopsis: validated.value.synopsis,
+      youtubeId: validated.value.youtubeId,
+      goalUsd: validated.value.goalUsd,
+      createdAt: owned.row.createdAt,
+      creatorId: owned.row.creatorId,
+    };
+    const next = existing.slice();
+    next[owned.index] = submission;
+    const wrote = await writeSubmissions(
+      token,
+      next,
+      current.status === "ok" ? current.sha : null,
+      "Update creator film preview",
+    );
+    if (wrote === "conflict") continue;
+    if (!wrote) return { ok: false, status: 503, error: EDIT_FAILED };
+    return { ok: true, submission };
+  }
+
+  return { ok: false, status: 503, error: EDIT_FAILED };
+}
+
+export async function deleteSharedSubmission(
+  id: string,
+  creatorId: string,
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const token = githubToken();
+  if (!token) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Shared save is not configured on this server.",
+    };
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const current = await readGithubFile(token);
+    if (current.status === "error") {
+      return {
+        ok: false,
+        status: 503,
+        error: "Could not read the film list. Nothing was changed.",
+      };
+    }
+    const existing = current.status === "ok" ? current.submissions : [];
+    const owned = ownedRow(existing, id, creatorId);
+    if (!owned.ok) return owned;
+
+    const votes = await removeSharedVotesForFilm(id);
+    if (!votes.ok) {
+      return {
+        ok: false,
+        status: votes.status,
+        error: "Could not remove this project's votes. The project was not removed.",
+      };
+    }
+
+    const fresh = await readGithubFile(token);
+    if (fresh.status === "error") {
+      return { ok: false, status: 503, error: DELETE_FAILED };
+    }
+    const rows = fresh.status === "ok" ? fresh.submissions : [];
+    const again = ownedRow(rows, id, creatorId);
+    if (!again.ok) {
+      if (again.status === 404) return { ok: true };
+      return again;
+    }
+    const next = rows.filter((row) => row.id !== id);
+    const wrote = await writeSubmissions(
+      token,
+      next,
+      fresh.status === "ok" ? fresh.sha : null,
+      "Remove creator film preview",
+    );
+    if (wrote === "conflict") continue;
+    if (!wrote) return { ok: false, status: 503, error: DELETE_FAILED };
+    return { ok: true };
+  }
+
+  return { ok: false, status: 503, error: DELETE_FAILED };
 }

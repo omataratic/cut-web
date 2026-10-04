@@ -2,6 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { getOrCreateCreatorId } from "@/lib/creator";
 import {
   saveLocalSubmission,
   validateSubmissionInput,
@@ -37,12 +38,20 @@ export function UploadForm() {
       return;
     }
 
+    let creatorId: string;
+    try {
+      creatorId = getOrCreateCreatorId();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "This browser cannot store a creator id.");
+      return;
+    }
+
     setPending(true);
     try {
       const response = await fetch("/api/films", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fields),
+        body: JSON.stringify({ ...fields, creatorId }),
       });
       const data = (await response.json()) as {
         error?: string;
@@ -63,7 +72,7 @@ export function UploadForm() {
       }
 
       if (response.status === 503) {
-        const saved = saveLocalSubmission(validated.value);
+        const saved = saveLocalSubmission({ ...validated.value, creatorId });
         router.push(`/film/${saved.id}`);
         return;
       }
@@ -71,7 +80,7 @@ export function UploadForm() {
       setError(data.error || "Could not save this film.");
     } catch {
       try {
-        const saved = saveLocalSubmission(validated.value);
+        const saved = saveLocalSubmission({ ...validated.value, creatorId });
         router.push(`/film/${saved.id}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save this film.");

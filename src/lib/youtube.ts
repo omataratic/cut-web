@@ -53,3 +53,9 @@ export function youtubeThumbnailUrl(
   return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
 }
 
+
+/** Watch link for an id this site already accepted. */
+export function youtubeWatchUrl(youtubeId: string): string | null {
+  if (!YOUTUBE_ID.test(youtubeId)) return null;
+  return `https://www.youtube.com/watch?v=${youtubeId}`;
+}

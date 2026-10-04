@@ -191,3 +191,113 @@ export async function castSharedVote(
     error: "Could not save this vote for other visitors.",
   };
 }
+
+/**
+ * Drop vote rows for one film id. Does not write the file when none match.
+ */
+export async function removeSharedVotesForFilm(
+  filmId: string,
+): Promise<{ ok: true; removed: number } | { ok: false; status: number; error: string }> {
+  const token = githubToken();
+  if (!token) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Shared save is not configured on this server.",
+    };
+  }
+  if (!filmId) {
+    return { ok: false, status: 400, error: "That project cannot be removed." };
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let sha = "";
+    let votes: unknown[] = [];
+    try {
+      const response = await fetch(`${contentsUrl()}?ref=main`, {
+        headers: githubHeaders(token),
+        cache: "no-store",
+      });
+      if (response.status === 404) return { ok: true, removed: 0 };
+      if (!response.ok) {
+        return {
+          ok: false,
+          status: 503,
+          error: "Could not read votes for this project. Nothing was removed.",
+        };
+      }
+      const data = (await response.json()) as { content?: string; sha?: string };
+      if (typeof data.content !== "string" || typeof data.sha !== "string") {
+        return {
+          ok: false,
+          status: 503,
+          error: "Could not read votes for this project. Nothing was removed.",
+        };
+      }
+      sha = data.sha;
+      const json = Buffer.from(data.content.replace(/\n/g, ""), "base64").toString(
+        "utf8",
+      );
+      const parsed = JSON.parse(json) as unknown;
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        Array.isArray(parsed) ||
+        !("votes" in parsed) ||
+        !Array.isArray((parsed as { votes: unknown }).votes)
+      ) {
+        return {
+          ok: false,
+          status: 503,
+          error: "Could not read votes for this project. Nothing was removed.",
+        };
+      }
+      votes = (parsed as { votes: unknown[] }).votes;
+    } catch {
+      return {
+        ok: false,
+        status: 503,
+        error: "Could not read votes for this project. Nothing was removed.",
+      };
+    }
+
+    const next = votes.filter((row) => {
+      if (!row || typeof row !== "object") return true;
+      return (row as { filmId?: unknown }).filmId !== filmId;
+    });
+    if (next.length === votes.length) return { ok: true, removed: 0 };
+
+    const content = Buffer.from(
+      `${JSON.stringify({ votes: next }, null, 2)}\n`,
+      "utf8",
+    ).toString("base64");
+    const response = await fetch(contentsUrl(), {
+      method: "PUT",
+      headers: {
+        ...githubHeaders(token),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "Remove votes for a deleted film",
+        content,
+        branch: "main",
+        sha,
+      }),
+    });
+    if (response.status === 409) continue;
+    if (!response.ok) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Could not remove votes for this project. The project was not removed.",
+      };
+    }
+    return { ok: true, removed: votes.length - next.length };
+  }
+
+  return {
+    ok: false,
+    status: 503,
+    error: "Could not remove votes for this project. The project was not removed.",
+  };
+}
