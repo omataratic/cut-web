@@ -4,6 +4,11 @@
       "voterId": "v-1c9c78fc-0416-4dfc-aaea-56c166d1e3c3",
       "filmId": "c-da697f70-c431-4c12-9bb9-45a349fad80d",
       "direction": "up"
+    },
+    {
+      "voterId": "v-83cadbff-37af-4227-9d32-d664cc7b19aa",
+      "filmId": "c-da697f70-c431-4c12-9bb9-45a349fad80d",
+      "direction": "down"
     }
   ]
 }
