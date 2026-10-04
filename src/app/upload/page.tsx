@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { UploadForm } from "@/components/UploadForm";
 
 export const metadata: Metadata = {
@@ -13,7 +14,11 @@ export default function UploadPage() {
       <p className="mt-3 text-sm leading-relaxed text-cut-muted">
         Submit a film title, your name, a short synopsis, and a YouTube preview.
         The funding goal is shown on the page. No payment is taken, and a wallet
-        is not required.
+        is not required. Finished movies are a separate catalog and are not
+        uploaded here.{" "}
+        <Link href="/finished/upload" className="text-cut-charcoal underline">
+          Add a finished film.
+        </Link>
       </p>
       <div className="mt-6">
         <UploadForm />

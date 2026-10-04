@@ -54,6 +54,7 @@ function NavBar({
   const pathname = usePathname();
   const isHot = pathname === "/" || pathname === "/hot";
   const isNew = pathname === "/new";
+  const isFinished = pathname === "/finished" || pathname.startsWith("/finished/");
 
   return (
     <header className="border-b border-cut-border bg-cut-cream">
@@ -96,6 +97,16 @@ function NavBar({
             }
           >
             New
+          </Link>
+          <Link
+            href="/finished"
+            className={
+              isFinished
+                ? "border-b border-cut-charcoal pb-0.5 text-cut-charcoal"
+                : "text-cut-muted hover:text-cut-charcoal"
+            }
+          >
+            Finished
           </Link>
           <a
             href="/CUT-whitepaper.pdf"
