@@ -37,10 +37,17 @@ export function FilmCard({ film }: FilmCardProps) {
 
         <div className="flex flex-1 flex-col gap-2 p-3">
           <div>
+            {film.sample ? (
+              <p className="text-xs tracking-widest text-cut-muted uppercase">
+                Sample
+              </p>
+            ) : null}
             <h3 className="font-serif text-lg leading-tight text-cut-charcoal">
               {film.title}
             </h3>
-            <p className="text-sm text-cut-muted">dir. {film.director}</p>
+            <p className="text-sm text-cut-muted">
+              {film.sample ? "dir." : "Creator"} {film.director}
+            </p>
           </div>
 
           <div className="flex items-center gap-1 text-sm text-cut-charcoal">

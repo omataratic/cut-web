@@ -15,6 +15,8 @@ export type Film = {
    * Leave unset for fictional demos — do not borrow unrelated trailers.
    */
   youtubeId?: string;
+  /** Fictional demo, shown so visitors can tell it from a submitted film. */
+  sample?: boolean;
 };
 
 /** Demo filmmaker for "A Place Between" — claim locally to post from any wallet. */
