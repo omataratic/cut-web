@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { DashboardBts } from "@/components/DashboardBts";
 import { RemoveProjectButton } from "@/components/RemoveProjectButton";
 import { getOrCreateCreatorId } from "@/lib/creator";
 import {
@@ -129,6 +130,7 @@ export function DashboardView() {
                 <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-cut-muted">
                   {project.synopsis}
                 </p>
+                <DashboardBts filmId={project.id} />
                 <div className="mt-4 flex flex-wrap gap-3 text-sm">
                   <Link href={viewHref(project)} className="text-cut-charcoal underline">
                     View

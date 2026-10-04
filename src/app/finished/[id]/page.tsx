@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BtsFeed } from "@/components/BtsFeed";
+import { listPublicBts } from "@/lib/github-bts";
 import { readSharedFinishedById } from "@/lib/github-finished";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,7 @@ export default async function FinishedFilmPage({ params }: PageProps) {
   const { id } = await params;
   const film = await readSharedFinishedById(id);
   if (!film) notFound();
+  const btsPosts = await listPublicBts(film.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
@@ -58,6 +61,10 @@ export default async function FinishedFilmPage({ params }: PageProps) {
           </p>
         </div>
       </article>
+
+      <div className="mt-8">
+        <BtsFeed filmId={film.id} filmTitle={film.title} posts={btsPosts} />
+      </div>
     </div>
   );
 }

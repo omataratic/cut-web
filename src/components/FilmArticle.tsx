@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BtsFeed } from "@/components/BtsFeed";
 import { FilmPreview } from "@/components/FilmPreview";
 import { VoteControls } from "@/components/VoteControls";
+import type { PublicBtsPost } from "@/lib/bts";
 import type { Film } from "@/lib/mock-films";
 
 function formatUsd(n: number) {
@@ -17,6 +18,7 @@ type FilmArticleProps = {
   localOnly?: boolean;
   prev?: Film | null;
   next?: Film | null;
+  btsPosts?: PublicBtsPost[];
 };
 
 function FilmStep({
@@ -66,6 +68,7 @@ export function FilmArticle({
   localOnly = false,
   prev = null,
   next = null,
+  btsPosts = [],
 }: FilmArticleProps) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
@@ -148,11 +151,7 @@ export function FilmArticle({
         </div>
       </article>
 
-      <BtsFeed
-        filmId={film.id}
-        mockOwnerWallet={film.ownerWallet}
-        filmTitle={film.title}
-      />
+      <BtsFeed filmId={film.id} filmTitle={film.title} posts={btsPosts} />
     </div>
   );
 }

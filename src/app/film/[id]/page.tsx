@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FilmArticle } from "@/components/FilmArticle";
 import { LocalFilmPage } from "@/components/LocalFilmPage";
 import { loadCatalog } from "@/lib/catalog";
+import { listPublicBts } from "@/lib/github-bts";
 import type { Film } from "@/lib/mock-films";
 import { resolveFilm } from "@/lib/resolve-film";
 
@@ -40,5 +41,6 @@ export default async function FilmDetailPage({ params }: PageProps) {
   if (!film) return <LocalFilmPage id={id} />;
   const { films } = await loadCatalog();
   const { prev, next } = neighbors(films, film.id);
-  return <FilmArticle film={film} prev={prev} next={next} />;
+  const btsPosts = await listPublicBts(film.id);
+  return <FilmArticle film={film} prev={prev} next={next} btsPosts={btsPosts} />;
 }
